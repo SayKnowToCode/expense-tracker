@@ -7,6 +7,7 @@ import importRoutes from './routes/importRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import tagRoutes from './routes/tagRoutes';
 import merchantRuleRoutes from './routes/merchantRuleRoutes';
+import autoRulesRoutes from './routes/autoRulesRoutes';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/merchants', merchantRoutes);
 app.use('/api/imports', importRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/merchant-rules', merchantRuleRoutes);
+app.use('/api/auto-rules', autoRulesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

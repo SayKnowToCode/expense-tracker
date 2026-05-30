@@ -18,6 +18,7 @@ model Category {
   description String?
   transactions Transaction[]
   merchantRules MerchantRule[]
+  autoRules   AutoCategoryRule[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -57,6 +58,33 @@ model Tag {
   id            Int      @id @default(autoincrement())
   name          String   @unique
   transactions  Transaction[] @relation("TransactionTags")
+  autoRules     AutoTagRule[]
+}
+
+// "When you see a transaction whose merchantKey == X, attach tag Y."
+// Created from the Transactions page via the
+// "Apply this tag to all transactions from <merchantKey>" toggle, and
+// applied automatically to every newly imported transaction whose key
+// matches.
+model AutoTagRule {
+  id          Int      @id @default(autoincrement())
+  merchantKey String
+  tagId       Int
+  tag         Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([merchantKey, tagId])
+  @@index([merchantKey])
+}
+
+// Same idea as AutoTagRule but for the (single) category column on
+// Transaction. Each merchantKey can map to at most one category.
+model AutoCategoryRule {
+  id          Int      @id @default(autoincrement())
+  merchantKey String   @unique
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
 
 model Transaction {
@@ -85,10 +113,15 @@ model Transaction {
   // (e.g. two ₹50 coffees with no reference number both
   // share a baseFingerprint but get index 0 and 1).
   occurrenceIndex   Int      @default(0)
+  // Derived "what merchant is this" key (e.g. "UDUPI FOOD PARK").
+  // Stable across re-uploads and used as the join key for AutoTagRule
+  // / AutoCategoryRule and for spend-by-merchant analytics.
+  merchantKey       String   @default("")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([baseFingerprint, occurrenceIndex])
   @@index([baseFingerprint])
   @@index([transactionDate])
+  @@index([merchantKey])
 }

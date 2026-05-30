@@ -1,6 +1,8 @@
 import { prisma } from '../db';
 import { matchMerchantRule } from './merchantRuleService';
 import { baseFingerprint } from '../utils/fingerprint';
+import { extractMerchantKey } from '../utils/merchantKey';
+import { applyRulesToTransaction } from './autoRulesService';
 
 export interface ParsedTransactionRow {
   transactionDate: string | Date;
@@ -85,6 +87,7 @@ export const parseAndStoreTransactions = async (
       const row = toInsert[i];
       const occurrenceIndex = existingCount + i;
       const match = await matchMerchantRule(String(row.description || ''));
+      const merchantKey = extractMerchantKey(String(row.description || ''));
       try {
         const transaction = await prisma.transaction.create({
           data: {
@@ -102,12 +105,20 @@ export const parseAndStoreTransactions = async (
             rawCsvJson: JSON.stringify(row.rawCsvJson ?? row),
             baseFingerprint: fp,
             occurrenceIndex,
+            merchantKey,
           },
         });
+        // Auto-apply any AutoTagRule / AutoCategoryRule that match
+        // this row's merchantKey. Errors are intentionally swallowed
+        // and logged rather than aborting the import — a broken rule
+        // shouldn't lose the user's data.
+        try {
+          await applyRulesToTransaction(transaction.id, merchantKey);
+        } catch (ruleErr) {
+          console.error('[parseAndStoreTransactions] auto-rule failed', ruleErr);
+        }
         created.push(transaction);
       } catch (err: any) {
-        // Race: a concurrent import inserted the same (fp, idx). Treat
-        // as duplicate so we never crash a long-running import.
         if (err?.code === 'P2002') {
           duplicates.push(row);
         } else {

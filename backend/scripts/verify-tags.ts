@@ -53,6 +53,11 @@ interface Tx {
   tags: { id: number; name: string }[];
 }
 
+interface TagResp {
+  transaction: Tx;
+  appliedToAll: { merchantKey: string; backfilled: number } | null;
+}
+
 const main = async () => {
   const all = await get<Tx[]>('/api/transactions');
   if (all.length < 3) die(`Need at least 3 transactions, got ${all.length}`);
@@ -60,30 +65,30 @@ const main = async () => {
 
   console.log('Tagging 3 transactions…');
 
-  const u1 = await put<Tx>(`/api/transactions/${a.id}/tags`, { tags: ['food', 'breakfast'] });
+  const u1 = await put<TagResp>(`/api/transactions/${a.id}/tags`, { tags: ['food', 'breakfast'] });
   ok(
     'a.tags after first PUT',
-    u1.tags.map((t) => t.name).sort(),
+    u1.transaction.tags.map((t) => t.name).sort(),
     ['breakfast', 'food'],
   );
 
-  const u1b = await put<Tx>(`/api/transactions/${a.id}/tags`, { tags: ['food', 'office-lunch'] });
+  const u1b = await put<TagResp>(`/api/transactions/${a.id}/tags`, { tags: ['food', 'office-lunch'] });
   ok(
     'a.tags after replace PUT',
-    u1b.tags.map((t) => t.name).sort(),
+    u1b.transaction.tags.map((t) => t.name).sort(),
     ['food', 'office-lunch'],
   );
 
-  await put<Tx>(`/api/transactions/${b.id}/tags`, { tags: ['transport'] });
-  await put<Tx>(`/api/transactions/${c.id}/tags`, { tags: ['food', 'subscription'] });
+  await put<TagResp>(`/api/transactions/${b.id}/tags`, { tags: ['transport'] });
+  await put<TagResp>(`/api/transactions/${c.id}/tags`, { tags: ['food', 'subscription'] });
 
   console.log('Creating category and assigning…');
   const cat = await post<{ id: number; name: string }>('/api/categories', { name: 'food' });
-  const u2 = await put<Tx>(`/api/transactions/${a.id}/category`, { categoryId: cat.id });
-  ok('a.category after assign', u2.category?.name, 'food');
+  const u2 = await put<TagResp>(`/api/transactions/${a.id}/category`, { categoryId: cat.id });
+  ok('a.category after assign', u2.transaction.category?.name, 'food');
 
-  const u3 = await put<Tx>(`/api/transactions/${a.id}/category`, { categoryId: null });
-  ok('a.category after clear', u3.category, null);
+  const u3 = await put<TagResp>(`/api/transactions/${a.id}/category`, { categoryId: null });
+  ok('a.category after clear', u3.transaction.category, null);
 
   const tags = await get<{ name: string }[]>('/api/tags');
   const names = tags.map((t) => t.name).sort();
@@ -93,9 +98,19 @@ const main = async () => {
   }
 
   const fresh = await get<Tx[]>(`/api/transactions`);
-  const tagged = fresh.filter((t) => (t.tags || []).length > 0).length;
-  if (tagged !== 3) die(`Expected 3 tagged transactions, got ${tagged}`);
-  console.log(`ok    ${tagged} transactions have at least one tag after refresh`);
+  // We assert per-tag presence rather than total-tagged-count because
+  // earlier verifications may have created AutoTagRules that
+  // backfilled additional rows with their own tags. That's expected
+  // and good; we only care that the three rows we just tagged are
+  // still carrying the expected tag sets.
+  const A = fresh.find((t) => t.id === a.id)!;
+  const B = fresh.find((t) => t.id === b.id)!;
+  const C = fresh.find((t) => t.id === c.id)!;
+  const has = (t: Tx, name: string) => (t.tags || []).some((x) => x.name === name);
+  if (!has(A, 'food') || !has(A, 'office-lunch')) die('A missing food/office-lunch');
+  if (!has(B, 'transport')) die('B missing transport');
+  if (!has(C, 'food') || !has(C, 'subscription')) die('C missing food/subscription');
+  console.log('ok    a/b/c carry the expected tags after refresh');
 
   console.log('\nverify-tags: all checks passed');
 };

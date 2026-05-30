@@ -6,12 +6,16 @@
 CSV exports of bank / credit-card statements, and the app categorizes,
 tags, and visualizes the transactions.
 
-- **Backend:** Node.js + Express + TypeScript + Prisma + SQLite. Source
-  lives in `backend/src`; build output goes to `backend/dist`.
-- **Frontend:** Vite + React 19 + TypeScript, in `frontend/`.
+- **Backend:** Node.js + Express + TypeScript + Prisma 7 + SQLite.
+  Source lives in `backend/src`; build output goes to `backend/dist`.
+- **Frontend:** Vite + React 19 + TypeScript, in `frontend/`. Uses
+  `recharts` for analytics visualizations and `react-router-dom` for
+  navigation. The dev server proxies `/api/*` → `http://localhost:4000`.
 - **DB schema:** `prisma/schema.prisma`. Migrations in `prisma/migrations/`.
 - **Generated Prisma client:** emitted to `backend/src/generated/prisma`
-  by `prisma generate` and is **not** checked in.
+  by `prisma generate` and is **not** checked in. Always go through
+  the singleton in `backend/src/db.ts`; never call `new PrismaClient()`
+  directly (Prisma 7 requires a driver adapter).
 
 ## Core domain rules
 
@@ -41,6 +45,27 @@ tags, and visualizes the transactions.
    came from the bank, so we can re-derive any future field without
    asking the user to re-upload.
 
+4. **Every transaction has a `merchantKey`.** This is the canonical
+   "what merchant is this" string derived from the noisy bank
+   narration (e.g. `UPI-UDUPI FOOD PARK-GPAY-...` → `UDUPI FOOD PARK`).
+   The extractor lives in `backend/src/utils/merchantKey.ts` and is
+   the only function allowed to compute the key — keep it the single
+   source of truth so the importer, backfill endpoint, and any future
+   tooling stay in agreement.
+
+5. **AutoTagRule / AutoCategoryRule are the user's "tag once, apply
+   forever" contract.** They are keyed by `merchantKey` and are
+   created from the Transactions page via the
+   "Apply changes to all N transactions from <merchantKey>" toggle.
+   - Creating a rule **must** backfill every existing matching
+     transaction synchronously (see
+     `backend/src/services/autoRulesService.ts`).
+   - The CSV importer **must** call `applyRulesToTransaction` after
+     every successful insert so newly imported rows pick up existing
+     rules.
+   - Rule creation is idempotent: re-creating the same rule is a no-op
+     that returns `backfilled: 0`.
+
 ## Conventions
 
 - Always import the Prisma client from
@@ -65,14 +90,31 @@ npx prisma generate              # writes backend/src/generated/prisma
 npm run dev                      # http://localhost:4000
 ```
 
-## Verifying the re-upload contract
+## Verifying the contracts
 
-After any change to import / dedup code, run:
+All scripts live in `backend/scripts/` and either spin up their own
+fresh state (`verify-dedupe`) or run against a live backend on
+`BASE_URL` (default `http://localhost:4000`).
 
 ```bash
-cd backend && npx ts-node scripts/verify-dedupe.ts
+cd backend
+# Idempotent import contract (self-contained).
+npx ts-node scripts/verify-dedupe.ts
+
+# The next three need a running backend on :4000 (`npm run dev`) and
+# the user's HDFC CSV at $CSV_PATH.
+BASE_URL=http://localhost:4000 \
+  CSV_PATH=/path/to/Acct\ Statement.csv \
+  npx ts-node --transpile-only scripts/verify-real-csv.ts
+BASE_URL=http://localhost:4000 \
+  npx ts-node --transpile-only scripts/verify-auto-rules.ts
+BASE_URL=http://localhost:4000 \
+  npx ts-node --transpile-only scripts/verify-tags.ts
 ```
 
-The script spins up a fresh SQLite DB, simulates three overlapping
-statement uploads, and asserts the transaction count matches the
-expected idempotent behavior. It exits non-zero on any regression.
+`verify-auto-rules.ts` is the contract test for the "tag once, apply
+forever" feature: it picks the busiest merchant in the loaded DB,
+tags one of its rows with `applyToAllFromSameMerchant=true`, and
+asserts every other row from the same merchant ends up tagged. Run it
+after any change to `autoRulesService`, `transactionController`, or
+the importer.

@@ -1,4 +1,5 @@
 import { BrowserRouter, NavLink, Route, Routes, Navigate } from 'react-router-dom';
+import AnalyticsPage from './pages/AnalyticsPage';
 import DashboardPage from './pages/DashboardPage';
 import ImportCsvPage from './pages/ImportCsvPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -11,6 +12,7 @@ const App = () => (
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/import" element={<ImportCsvPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
@@ -43,6 +45,9 @@ const Nav = () => {
       </NavLink>
       <NavLink to="/transactions" style={linkStyle}>
         Transactions
+      </NavLink>
+      <NavLink to="/analytics" style={linkStyle}>
+        Analytics
       </NavLink>
       <NavLink to="/import" style={linkStyle}>
         Import CSV
