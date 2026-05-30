@@ -15,3 +15,5 @@ backend/src/generated
 *.db-journal
 prisma/dev.db
 prisma/dev.db-journal
+
+excel_sheets
