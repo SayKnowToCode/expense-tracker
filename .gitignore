@@ -1,5 +1,17 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
 
+# Build artifacts
+backend/dist
+
+# Prisma generated client (regenerated locally via `prisma generate`)
+backend/src/generated
 /generated/prisma
+
+# Local SQLite databases
+*.db
+*.db-journal
+prisma/dev.db
+prisma/dev.db-journal

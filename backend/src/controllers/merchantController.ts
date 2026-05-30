@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '../generated/prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db';
 
 export const getAllMerchants = async (req: Request, res: Response) => {
   const merchants = await prisma.merchant.findMany();

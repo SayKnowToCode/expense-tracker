@@ -77,6 +77,18 @@ model Transaction {
   merchantId        Int?
   merchant          Merchant? @relation(fields: [merchantId], references: [id])
   tags              Tag[]    @relation("TransactionTags")
+  // Stable hash of normalized identity fields
+  // (date + amount + debit/credit + description + referenceNumber).
+  // Used to dedupe re-uploads of overlapping bank statements.
+  baseFingerprint   String
+  // Occurrence index for identical rows on the same day
+  // (e.g. two ₹50 coffees with no reference number both
+  // share a baseFingerprint but get index 0 and 1).
+  occurrenceIndex   Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@unique([baseFingerprint, occurrenceIndex])
+  @@index([baseFingerprint])
+  @@index([transactionDate])
 }
