@@ -44,6 +44,17 @@ export interface ImportSummary {
   summary: string;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  description?: string | null;
+}
+
 export interface Transaction {
   id: number;
   transactionDate: string;
@@ -51,9 +62,10 @@ export interface Transaction {
   debitOrCredit: string;
   description: string;
   referenceNumber: string | null;
-  category?: { id: number; name: string } | null;
+  categoryId?: number | null;
+  category?: Category | null;
   merchant?: { id: number; name: string } | null;
-  tags?: { id: number; name: string }[];
+  tags?: Tag[];
   import?: { id: number; fileName: string };
 }
 
@@ -79,4 +91,26 @@ export const api = {
   listTransactions: () => request<Transaction[]>('/api/transactions'),
 
   dashboardSummary: () => request<DashboardSummary>('/api/analytics/summary'),
+
+  listTags: () => request<Tag[]>('/api/tags'),
+
+  listCategories: () => request<Category[]>('/api/categories'),
+
+  createCategory: (name: string, description?: string) =>
+    request<Category>('/api/categories', {
+      method: 'POST',
+      body: JSON.stringify({ name, description }),
+    }),
+
+  setTransactionTags: (transactionId: number, tags: string[]) =>
+    request<Transaction>(`/api/transactions/${transactionId}/tags`, {
+      method: 'PUT',
+      body: JSON.stringify({ tags }),
+    }),
+
+  setTransactionCategory: (transactionId: number, categoryId: number | null) =>
+    request<Transaction>(`/api/transactions/${transactionId}/category`, {
+      method: 'PUT',
+      body: JSON.stringify({ categoryId }),
+    }),
 };
