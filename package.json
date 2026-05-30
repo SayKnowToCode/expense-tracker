@@ -1,20 +1,19 @@
 {
   "name": "expense-tracker",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "npm install && npm install --prefix backend && npm install --prefix frontend && npm run db:migrate && npm run db:generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:reset": "rm -f prisma/dev.db prisma/dev.db-journal && npm run db:migrate",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "verify:dedupe": "npm run verify-dedupe --prefix backend"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@prisma/client": "^7.8.0",
-    "cors": "^2.8.6",
     "dotenv": "^16.4.5",
-    "express": "^5.2.1",
-    "prisma": "^7.8.0",
-    "sqlite3": "^6.0.1"
+    "prisma": "^7.8.0"
   }
 }

@@ -80,15 +80,37 @@ tags, and visualizes the transactions.
 - Don't commit `backend/dist`, `backend/src/generated`, `*.db`, or
   `.env`.
 
-## Local setup
+## Local setup (fresh clone)
 
 ```bash
-cp .env.example .env
-cd backend && npm install
-npx prisma migrate deploy        # creates ./prisma/dev.db
-npx prisma generate              # writes backend/src/generated/prisma
-npm run dev                      # http://localhost:4000
+cp .env.example .env             # default points at prisma/dev.db
+npm run setup                    # installs root + backend + frontend,
+                                 # runs prisma migrate deploy, then
+                                 # prisma generate. Creates a fresh
+                                 # empty SQLite DB at prisma/dev.db.
 ```
+
+Then in two terminals:
+
+```bash
+npm run dev:backend              # http://localhost:4000
+npm run dev:frontend             # http://localhost:5173
+```
+
+Open the frontend, hit **Import CSV**, and drop your bank statement
+in. Dashboard / Transactions / Analytics tabs all light up
+immediately.
+
+To start over with an empty DB:
+
+```bash
+npm run db:reset
+```
+
+`backend/src/db.ts` resolves any relative `file:./...` `DATABASE_URL`
+against the repo root, so the backend, `prisma migrate`, and
+`prisma generate` always point at the same SQLite file no matter
+which directory you ran the command from.
 
 ## Verifying the contracts
 
