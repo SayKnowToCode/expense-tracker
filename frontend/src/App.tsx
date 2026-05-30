@@ -3,6 +3,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import DashboardPage from './pages/DashboardPage';
 import ImportCsvPage from './pages/ImportCsvPage';
 import TransactionsPage from './pages/TransactionsPage';
+import MonthlyAnalyticsPage from './pages/MonthlyAnalyticsPage';
 
 const App = () => (
   <BrowserRouter>
@@ -13,6 +14,7 @@ const App = () => (
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/monthly-analytics" element={<MonthlyAnalyticsPage />} />
         <Route path="/import" element={<ImportCsvPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
@@ -48,6 +50,9 @@ const Nav = () => {
       </NavLink>
       <NavLink to="/analytics" style={linkStyle}>
         Analytics
+      </NavLink>
+      <NavLink to="/monthly-analytics" style={linkStyle}>
+        Monthly Analytics
       </NavLink>
       <NavLink to="/import" style={linkStyle}>
         Import CSV
