@@ -1,5 +1,3 @@
-import React from 'react';
-
 const MonthlyReviewPage = () => {
   return (
     <div className="p-4">

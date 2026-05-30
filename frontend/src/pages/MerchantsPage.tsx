@@ -1,5 +1,3 @@
-import React from 'react';
-
 const MerchantsPage = () => {
   return (
     <div className="p-4">
