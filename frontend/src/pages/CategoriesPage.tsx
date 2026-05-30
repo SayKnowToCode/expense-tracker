@@ -1,5 +1,3 @@
-import React from 'react';
-
 const CategoriesPage = () => {
   return (
     <div className="p-4">

@@ -1,6 +1,4 @@
-import { PrismaClient } from '../generated/prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db';
 
 export const matchMerchantRule = async (description: string): Promise<{ categoryId?: number; merchantId?: number }> => {
   // Try exact, contains, regex in order

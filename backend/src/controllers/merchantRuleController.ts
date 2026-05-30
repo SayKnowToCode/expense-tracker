@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '../generated/prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db';
 
 export const getAllMerchantRules = async (req: Request, res: Response) => {
   const rules = await prisma.merchantRule.findMany({ include: { category: true, merchant: true } });
