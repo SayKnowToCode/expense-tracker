@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../backend/src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  transactions Transaction[]
+  merchantRules MerchantRule[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Merchant {
+  id          Int      @id @default(autoincrement())
+  name        String
+  identifier  String   @unique
+  transactions Transaction[]
+  merchantRules MerchantRule[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MerchantRule {
+  id          Int      @id @default(autoincrement())
+  pattern     String
+  matchType   String   // 'contains', 'exact', 'regex'
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+  merchant    Merchant? @relation(fields: [merchantId], references: [id])
+  merchantId  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Import {
+  id            Int      @id @default(autoincrement())
+  fileName      String
+  importDate    DateTime @default(now())
+  transactions  Transaction[]
+  originalCsv   String   // Store original CSV as text
+  summary       String?
+}
+
+model Tag {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  transactions  Transaction[] @relation("TransactionTags")
+}
+
+model Transaction {
+  id                Int      @id @default(autoincrement())
+  transactionDate   DateTime
+  amount            Float
+  debitOrCredit     String
+  description       String
+  referenceNumber   String?
+  merchantIdentifier String?
+  accountIdentifier String?
+  categoryId        Int?
+  category          Category? @relation(fields: [categoryId], references: [id])
+  notes             String?
+  importId          Int
+  import            Import   @relation(fields: [importId], references: [id])
+  rawCsvJson        String
+  merchantId        Int?
+  merchant          Merchant? @relation(fields: [merchantId], references: [id])
+  tags              Tag[]    @relation("TransactionTags")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

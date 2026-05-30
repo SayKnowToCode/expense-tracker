@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDashboardSummary = void 0;
+const prisma_1 = require("../../generated/prisma");
+const prisma = new prisma_1.PrismaClient();
+const getDashboardSummary = async () => {
+    const totalIncome = await prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { debitOrCredit: 'credit' },
+    });
+    const totalExpenses = await prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { debitOrCredit: 'debit' },
+    });
+    const netSavings = (totalIncome._sum.amount || 0) - (totalExpenses._sum.amount || 0);
+    return {
+        totalIncome: totalIncome._sum.amount || 0,
+        totalExpenses: totalExpenses._sum.amount || 0,
+        netSavings,
+    };
+};
+exports.getDashboardSummary = getDashboardSummary;
